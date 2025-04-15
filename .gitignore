@@ -1,0 +1,33 @@
+*.iml
+.gradle
+.idea/
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Build & Output Files
+/build/
+app/build/
+out/
+*.apk
+output.json
+
+# Logs & Temporary Files
+*.log
+*.tmp
+
+# Firebase & Secret Keys
+google-services.json
+*.jks
+*.keystore
+.env
+/keystore

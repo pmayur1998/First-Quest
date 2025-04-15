@@ -1,0 +1,58 @@
+name: Android CI - Firebase App Distribution
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      releaseNotes:
+        description: 'Release notes for testers'
+        required: false
+
+jobs:
+  build-and-distribute:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+
+      - name: Decode google-services.json
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > app/google-services.json
+
+      - name: Decode Firebase Service Account Key
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" | base64 --decode > "${{ github.workspace }}/firebase-service-account.json"
+
+      - name: Build Release APK with version from GitHub Run
+        run: ./gradlew :app:assembleRelease
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+      - name: Distribute to Firebase App Distribution
+        run: ./gradlew :app:appDistributionUploadRelease
+        env:
+          FIREBASE_CREDENTIAL_PATH: ${{ github.workspace }}/firebase-service-account.json
+          FIREBASE_RELEASE_NOTES: ${{ github.event.inputs.releaseNotes || 'Auto release from GitHub Actions 🚀' }}
+          FIREBASE_GROUPS: ${{ secrets.FIREBASE_GROUPS }}
+
+      - name: Clean build artifacts
+        run: ./gradlew clean

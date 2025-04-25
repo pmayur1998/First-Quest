@@ -21,4 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "First-Quest"
 include(":app")
- 
+include(":common")
+include(":initial-quest")
+include(":second-quest")

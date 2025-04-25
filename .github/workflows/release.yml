@@ -2,7 +2,7 @@ name: Android CI - Firebase App Distribution
 
 on:
   push:
-    branches: [ master ]
+    branches: [ dev ]
   workflow_dispatch:
     inputs:
       releaseNotes:

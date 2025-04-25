@@ -1,42 +1,30 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.appdistribution)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "com.example.first_quest"
+    namespace = "com.example.common"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.first_quest"
         minSdk = 24
-        targetSdk = 35
-        versionCode = System.getenv("VERSION_CODE")?.toInt() ?: 1
-        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = file("${rootProject.rootDir}/keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEYSTORE_PASSWORD")
-        }
-    }
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -60,9 +48,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":common"))
-    implementation(project(":initial-quest"))
-    implementation(project(":second-quest"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -110,9 +95,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-}
-firebaseAppDistribution {
-    serviceCredentialsFile = "${rootProject.rootDir}/firebase-service-account.json"
-    releaseNotes = System.getenv("FIREBASE_RELEASE_NOTES") ?: "Auto release from CI"
-    groups = System.getenv("FIREBASE_GROUPS") ?: ""
 }

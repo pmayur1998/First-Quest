@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlin.coil)
 
     // Hilt
     implementation(libs.hilt.android)

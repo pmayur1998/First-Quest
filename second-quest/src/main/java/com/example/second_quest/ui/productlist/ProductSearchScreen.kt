@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,15 +14,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -43,8 +39,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -52,26 +46,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.example.second_quest.domain.model.Product
-import com.example.second_quest.domain.model.SortOrder
-import com.example.second_quest.utils.convertToPriceDouble
+import com.example.second_quest.ui.composables.ProductFilter
+import com.example.second_quest.ui.composables.ProductItem
 import kotlinx.coroutines.launch
 
 
@@ -149,7 +135,7 @@ fun ProductSearchScreen(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
-                CompactFiltersSection(
+                ProductFilter(
                     minPrice = uiState.minPrice,
                     maxPrice = uiState.maxPrice,
                     sortOrder = uiState.sortOrder,
@@ -272,275 +258,17 @@ fun SearchBar(
 }
 
 @Composable
-fun CompactFiltersSection(
-    minPrice: Double?,
-    maxPrice: Double?,
-    sortOrder: SortOrder,
-    onPriceRangeChanged: (Double?, Double?) -> Unit,
-    onSortOrderChanged: (SortOrder) -> Unit
-) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-    ) {
-        TabRow(
-            selectedTabIndex = selectedTab,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp)),
-            contentColor = MaterialTheme.colorScheme.primary
-        ) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { Text("Price") })
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Sort") })
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        when (selectedTab) {
-            0 -> {
-                CompactPriceRangeFilter(
-                    minPrice = minPrice,
-                    maxPrice = maxPrice,
-                    onPriceRangeChanged = onPriceRangeChanged
-                )
-            }
-
-            1 -> {
-                CompactSortOptions(
-                    currentSortOrder = sortOrder, onSortOrderChanged = onSortOrderChanged
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CompactPriceRangeFilter(
-    minPrice: Double?, maxPrice: Double?, onPriceRangeChanged: (Double?, Double?) -> Unit
-) {
-    var minPriceText by remember(minPrice) { mutableStateOf(minPrice?.toString() ?: "") }
-    var maxPriceText by remember(maxPrice) { mutableStateOf(maxPrice?.toString() ?: "") }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        OutlinedTextField(
-            value = minPriceText,
-            onValueChange = { value ->
-                minPriceText = value
-                onPriceRangeChanged(
-                    value.convertToPriceDouble(), maxPriceText.convertToPriceDouble()
-                )
-            },
-            label = { Text("Min Price") },
-            modifier = Modifier.weight(1f),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            leadingIcon = { Text("$", style = MaterialTheme.typography.bodyMedium) })
-
-        OutlinedTextField(
-            value = maxPriceText,
-            onValueChange = { value ->
-                maxPriceText = value
-                onPriceRangeChanged(
-                    minPriceText.convertToPriceDouble(), value.convertToPriceDouble()
-                )
-            },
-            label = { Text("Max Price") },
-            modifier = Modifier.weight(1f),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            leadingIcon = { Text("$", style = MaterialTheme.typography.bodyMedium) })
-    }
-}
-
-@Composable
-fun CompactSortOptions(
-    currentSortOrder: SortOrder, onSortOrderChanged: (SortOrder) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            SortOptionChip(
-                text = "Price ↑",
-                selected = currentSortOrder == SortOrder.PRICE_ASC,
-                onClick = { onSortOrderChanged(SortOrder.PRICE_ASC) })
-
-            SortOptionChip(
-                text = "Price ↓",
-                selected = currentSortOrder == SortOrder.PRICE_DESC,
-                onClick = { onSortOrderChanged(SortOrder.PRICE_DESC) })
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            SortOptionChip(
-                text = "Name A-Z",
-                selected = currentSortOrder == SortOrder.NAME_ASC,
-                onClick = { onSortOrderChanged(SortOrder.NAME_ASC) })
-
-            SortOptionChip(
-                text = "Name Z-A",
-                selected = currentSortOrder == SortOrder.NAME_DESC,
-                onClick = { onSortOrderChanged(SortOrder.NAME_DESC) })
-        }
-    }
-}
-
-@Composable
-fun SortOptionChip(
-    text: String, selected: Boolean, onClick: () -> Unit
-) {
-    Box(modifier = Modifier
-        .clip(RoundedCornerShape(16.dp))
-        .clickable { onClick() }
-        .background(
-            if (selected) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(16.dp)
-        ), contentAlignment = Alignment.Center) {
-        Text(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
-            else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-
-}
-
-@Composable
 fun ProductsList(products: List<Product>) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
         items(items = products, key = { it.id }) { product ->
-            CompactProductItem(product = product)
+            ProductItem(product = product)
         }
     }
 }
 
-@Composable
-fun CompactProductItem(product: Product) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current).data(product.thumbnail)
-                    .crossfade(true).build(),
-                contentDescription = product.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp)
-            ) {
-                Text(
-                    text = product.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Row(
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "$${product.price}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    if (product.discountPercentage > 0) {
-                        Text(
-                            text = " (-${product.discountPercentage}%)",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-
-                Text(
-                    text = product.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-            }
-
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = product.rating.toString(),
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-
-                Text(
-                    text = product.category,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-
-                Text(
-                    text = "${product.stock} in stock",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (product.stock > 0) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-}
 
 object Icons {
     object Default {

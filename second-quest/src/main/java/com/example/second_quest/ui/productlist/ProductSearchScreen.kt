@@ -11,12 +11,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,7 +23,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -171,9 +168,10 @@ fun ProductSearchScreen(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Refresh",
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier
+                            .size(16.dp)
+                            .padding(end = 4.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text("Refresh", style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -209,11 +207,6 @@ fun ProductSearchScreen(
                                 text = "No products found",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "Try different search criteria",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -277,6 +270,5 @@ object Icons {
         val Refresh = androidx.compose.material.icons.Icons.Default.Refresh
         val ExpandMore = androidx.compose.material.icons.Icons.Default.KeyboardArrowDown
         val ExpandLess = androidx.compose.material.icons.Icons.Default.KeyboardArrowUp
-        val Star = androidx.compose.material.icons.Icons.Default.Star
     }
 }

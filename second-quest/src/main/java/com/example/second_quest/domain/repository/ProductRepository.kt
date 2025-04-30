@@ -6,5 +6,5 @@ import kotlinx.coroutines.flow.Flow
 interface ProductRepository {
     fun getLocalProducts(query: String): Flow<List<Product>>
     fun getRemoteProducts(query: String): Flow<List<Product>>
-    suspend fun refreshProducts(needToRefreshDB: Boolean = false): List<Product>
+    suspend fun fetchInitialProducts()
 }

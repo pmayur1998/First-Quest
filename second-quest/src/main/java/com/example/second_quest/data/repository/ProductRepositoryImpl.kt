@@ -21,20 +21,12 @@ class ProductRepositoryImpl @Inject constructor(
     }
 
     override fun getLocalProducts(query: String): Flow<List<Product>> {
-        val localProduct = if (query.isEmpty()) {
-            productDao.getAllProducts()
-        } else {
-            productDao.searchProducts(query)
-        }
+        val localProduct = productDao.searchProducts(query)
         return localProduct.map { entities -> entities.map { it.toDomain() } }
     }
 
-    override suspend fun refreshProducts(needToRefreshDB: Boolean): List<Product> {
-        if (needToRefreshDB) {
-            productDao.deleteAllProducts()
-        }
+    override suspend fun fetchInitialProducts() {
         val response = apiService.getAllProducts()
         productDao.insertProducts(response.products.map { it.toEntity() })
-        return response.products.map { it.toDomain() }
     }
 }

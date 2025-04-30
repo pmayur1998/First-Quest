@@ -6,9 +6,9 @@ import com.example.common.domain.model.Result
 import com.example.second_quest.domain.model.FilterParams
 import com.example.second_quest.domain.model.Product
 import com.example.second_quest.domain.model.SortOrder
+import com.example.second_quest.domain.usecase.FetchInitialProductsUseCase
 import com.example.second_quest.domain.usecase.FilterProductUseCase
 import com.example.second_quest.domain.usecase.GetSearchResultsUseCase
-import com.example.second_quest.domain.usecase.RefreshProductsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,41 +28,44 @@ import javax.inject.Inject
 @HiltViewModel
 class ProductViewModel @Inject constructor(
     private val getProductsUseCase: GetSearchResultsUseCase,
-    private val refreshProductsUseCase: RefreshProductsUseCase,
+    private val fetchInitialProductsUseCase: FetchInitialProductsUseCase,
     private val filterProductUseCase: FilterProductUseCase
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
-    private var fetchedProducts: List<Product> = emptyList()
+    private val fetchedProducts = MutableStateFlow<List<Product>>(emptyList())
     private val _uiState = MutableStateFlow(ProductsUiState())
     val uiState = _uiState.asStateFlow()
 
     init {
+        setupSearchObserver()
         fetchInitialProducts()
     }
 
     private fun fetchInitialProducts() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            handleUIAsPerResult(refreshProductsUseCase())
-            setupSearchObserver()
+            val result = fetchInitialProductsUseCase()
+            if (result is Result.Error) {
+                _uiState.update { it.copy(isLoading = false, error = result.exception.message) }
+            }
         }
     }
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     private fun setupSearchObserver() {
-        _searchQuery.debounce(300).filter { it.length > 2 || it.isEmpty() }.distinctUntilChanged()
+        _searchQuery.debounce(300)
+            .filter { it.length > 2 || it.isEmpty() }.distinctUntilChanged()
+            .onStart { _uiState.update { it.copy(isLoading = true) } }
             .flatMapLatest { query ->
                 getProductsUseCase(query, getFilterParams())
-            }.onEach { result ->
-                handleUIAsPerResult(result)
-            }.launchIn(viewModelScope)
+            }.onEach(::handleUIAsPerResult).launchIn(viewModelScope)
     }
 
     fun handleEvent(event: SearchEvent) {
         when (event) {
             is SearchEvent.QueryChanged -> {
-                _searchQuery.update { event.query }
                 _uiState.update { it.copy(searchQuery = event.query) }
+                _searchQuery.update { event.query }
             }
 
             is SearchEvent.PriceRangeChanged -> {
@@ -81,15 +85,13 @@ class ProductViewModel @Inject constructor(
     }
 
     private fun refreshProducts() {
-        viewModelScope.launch {
-            _uiState.update { ProductsUiState(isLoading = true) }
-            handleUIAsPerResult(refreshProductsUseCase(true))
-        }
+        _uiState.update { ProductsUiState(products = fetchedProducts.value) }
+        _searchQuery.update { "" }
     }
 
     private fun filterProducts() {
-        val result = filterProductUseCase(fetchedProducts, getFilterParams())
-        _uiState.update { it.copy(products = result, needToScrollTop = true) }
+        val result = filterProductUseCase(fetchedProducts.value, getFilterParams())
+        _uiState.update { it.copy(products = result) }
     }
 
     private fun getFilterParams(): FilterParams {
@@ -103,7 +105,7 @@ class ProductViewModel @Inject constructor(
         when (result) {
             is Result.Success -> {
                 _uiState.update { state ->
-                    fetchedProducts = result.data
+                    fetchedProducts.value = result.data
                     state.copy(products = result.data, isLoading = false, error = null)
                 }
             }
@@ -131,8 +133,7 @@ data class ProductsUiState(
     val searchQuery: String = "",
     val minPrice: Double? = null,
     val maxPrice: Double? = null,
-    val sortOrder: SortOrder = SortOrder.DEFAULT,
-    val needToScrollTop: Boolean = false
+    val sortOrder: SortOrder = SortOrder.DEFAULT
 )
 
 sealed class SearchEvent {

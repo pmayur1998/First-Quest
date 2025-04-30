@@ -19,6 +19,7 @@ class GetSearchResultsUseCase @Inject constructor(
     operator fun invoke(
         searchQuery: String, filterParams: FilterParams
     ): Flow<Result<List<Product>>> {
+        // Check if the network is available and the search query is not empty to fetch remote products
         return if (connectivityChecker.isNetworkAvailable() && searchQuery.isNotEmpty()) {
             getRemoteAndLocalProductsFlow(searchQuery, filterParams)
         } else {

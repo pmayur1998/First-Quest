@@ -32,7 +32,6 @@ class ProductViewModel @Inject constructor(
     private val filterProductUseCase: FilterProductUseCase
 ) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
-    private val fetchedProducts = MutableStateFlow<List<Product>>(emptyList())
     private val _uiState = MutableStateFlow(ProductsUiState())
     val uiState = _uiState.asStateFlow()
 
@@ -85,13 +84,19 @@ class ProductViewModel @Inject constructor(
     }
 
     private fun refreshProducts() {
-        _uiState.update { ProductsUiState(products = fetchedProducts.value) }
+        val fetchedProducts = _uiState.value.allFetchedProducts
+        _uiState.update {
+            ProductsUiState(
+                displayedProducts = fetchedProducts,
+                allFetchedProducts = fetchedProducts
+            )
+        }
         _searchQuery.update { "" }
     }
 
     private fun filterProducts() {
-        val result = filterProductUseCase(fetchedProducts.value, getFilterParams())
-        _uiState.update { it.copy(products = result) }
+        val result = filterProductUseCase(_uiState.value.allFetchedProducts, getFilterParams())
+        _uiState.update { it.copy(displayedProducts = result) }
     }
 
     private fun getFilterParams(): FilterParams {
@@ -104,9 +109,14 @@ class ProductViewModel @Inject constructor(
     private fun handleUIAsPerResult(result: Result<List<Product>>) {
         when (result) {
             is Result.Success -> {
+                val products = result.data
                 _uiState.update { state ->
-                    fetchedProducts.value = result.data
-                    state.copy(products = result.data, isLoading = false, error = null)
+                    state.copy(
+                        displayedProducts = products,
+                        allFetchedProducts = products,
+                        isLoading = false,
+                        error = null
+                    )
                 }
             }
 
@@ -127,7 +137,8 @@ class ProductViewModel @Inject constructor(
 
 
 data class ProductsUiState(
-    val products: List<Product> = emptyList(),
+    val displayedProducts: List<Product> = emptyList(),
+    val allFetchedProducts: List<Product> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val searchQuery: String = "",

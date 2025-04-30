@@ -152,7 +152,7 @@ fun ProductSearchScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "${uiState.products.size} products found",
+                    text = "${uiState.displayedProducts.size} products found",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -190,7 +190,7 @@ fun ProductSearchScreen(
                         )
                     }
 
-                    uiState.products.isEmpty() -> {
+                    uiState.displayedProducts.isEmpty() -> {
                         Column(
                             modifier = Modifier.align(Alignment.Center),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -212,7 +212,7 @@ fun ProductSearchScreen(
                     }
 
                     else -> {
-                        ProductsList(products = uiState.products)
+                        ProductsList(products = uiState.displayedProducts)
                     }
                 }
             }

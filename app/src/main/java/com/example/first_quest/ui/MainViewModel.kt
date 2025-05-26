@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.example.first_quest.model.Quest
 import com.example.initial_quest.ui.navigation.EventNavHost
 import com.example.second_quest.ui.productlist.ProductSearchScreen
+import com.example.third_quest.ui.navigation.StatsNavHost
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -20,6 +21,11 @@ class MainViewModel @Inject constructor() : ViewModel() {
             name = "Quest 2",
             route = "second_quest",
             content = { ProductSearchScreen() }
+        ),
+        Quest(
+            name = "Quest 3",
+            route = "third_quest",
+            content = { StatsNavHost() }
         )
     )
 }

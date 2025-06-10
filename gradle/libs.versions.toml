@@ -30,6 +30,8 @@ coil = "2.6.0"
 material = "1.12.0"
 threetenabp = "1.4.6"
 threetenbp = "1.7.1"
+turbine = "1.1.0"
+truth = "1.1.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -81,6 +83,8 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-test" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+truth = { module = "com.google.truth:truth", version.ref = "truth" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

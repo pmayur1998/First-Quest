@@ -33,6 +33,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":common"))
     // Kotlin Coroutines
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.coroutines.test)

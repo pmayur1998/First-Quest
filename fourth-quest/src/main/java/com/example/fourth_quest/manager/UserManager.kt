@@ -5,7 +5,8 @@ import com.example.fourth_quest.domain.UserCache
 import com.example.fourth_quest.domain.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.toList
 
 class UserManager(
     private val userRepository: UserRepository, private val userCache: UserCache
@@ -19,7 +20,9 @@ class UserManager(
     }
 
     suspend fun refreshAllUsers(): Flow<User> {
-        return userRepository.fetchAllUsers().onEach { user -> userCache.putUser(user) }
+        return userRepository.fetchAllUsers().toList()
+            .also { users -> userCache.initializeCache(users) }
+            .asFlow()
     }
 
     fun observeAllUsers(): SharedFlow<List<User>> = userCache.observeUsers()

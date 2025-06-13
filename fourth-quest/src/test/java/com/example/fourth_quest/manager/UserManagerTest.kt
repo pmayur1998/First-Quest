@@ -17,6 +17,7 @@ import com.example.fourth_quest.domain.UserCache
 import com.example.fourth_quest.domain.UserRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.toList
 import org.junit.Assert.assertThrows
 import java.io.IOException
 import java.net.UnknownHostException
@@ -132,7 +133,7 @@ class UserManagerTest {
     fun `refreshAllUsers should fetch from repository and update cache`() = runTest(testDispatcher) {
         val userFlow = flowOf(testUser, testUser2)
         coEvery { userRepository.fetchAllUsers() } returns userFlow
-        coJustRun { userCache.putUser(any()) }
+        coJustRun { userCache.initializeCache(userFlow.toList()) }
 
         userManager.refreshAllUsers().test {
             assertThat(awaitItem()).isEqualTo(testUser)
@@ -140,8 +141,7 @@ class UserManagerTest {
             awaitComplete()
         }
 
-        coVerify { userCache.putUser(testUser) }
-        coVerify { userCache.putUser(testUser2) }
+        coVerify { userCache.initializeCache(userFlow.toList()) }
     }
 
     @Test
@@ -161,12 +161,10 @@ class UserManagerTest {
     fun `refreshAllUsers should handle empty repository response`() = runTest(testDispatcher) {
         val emptyFlow = emptyFlow<User>()
         coEvery { userRepository.fetchAllUsers() } returns emptyFlow
+        coJustRun { userCache.initializeCache(emptyList()) }
 
-        userManager.refreshAllUsers().test {
-            awaitComplete()
-        }
-
-        coVerify(exactly = 0) { userCache.putUser(any()) }
+        val result = userManager.refreshAllUsers().toList()
+        assertThat(result).isEmpty()
     }
 
     @Test

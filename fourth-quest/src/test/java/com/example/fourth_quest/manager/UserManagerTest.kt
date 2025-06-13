@@ -80,37 +80,52 @@ class UserManagerTest {
     }
 
     @Test
-    fun `getUser should return null when cache throws exception`() = runTest(testDispatcher) {
+    fun `getUser should throw exception when userCache getUser throws exception`() = runTest(testDispatcher) {
         coEvery { userCache.getUser("1") } throws RuntimeException("Cache corruption")
 
-        val result = userManager.getUser("1")
-        assertThat(result).isNull()
+        assertThrows(RuntimeException::class.java) {
+            runTest(testDispatcher) {
+                userManager.getUser("1")
+            }
+        }
+
         coVerify { userCache.getUser("1") }
         coVerify(exactly = 0) { userRepository.fetchUserById(any()) }
     }
 
     @Test
-    fun `getUser should return null when repository throws exception`() = runTest(testDispatcher) {
+    fun `getUser should throw exception when userRepository fetchUserById throws exception`() = runTest(testDispatcher) {
         coEvery { userCache.getUser("1") } returns null
         coEvery { userRepository.fetchUserById("1") } throws UnknownHostException("Network error")
 
-        val result = userManager.getUser("1")
-        assertThat(result).isNull()
-        coVerify { userCache.getUser("1") }
-        coVerify { userRepository.fetchUserById("1") }
+        assertThrows(UnknownHostException::class.java) {
+            runTest(testDispatcher) {
+                userManager.getUser("1")
+            }
+        }
+        coVerifyOrder {
+            userCache.getUser("1")
+            userRepository.fetchUserById("1")
+        }
         coVerify(exactly = 0) { userCache.putUser(any()) }
     }
 
     @Test
-    fun `getUser should return null when cache put fails`() = runTest(testDispatcher) {
+    fun `getUser should throw exception when userCache putUser throws exception`() = runTest(testDispatcher) {
         coEvery { userCache.getUser("1") } returns null
         coEvery { userRepository.fetchUserById("1") } returns testUser
         coEvery { userCache.putUser(testUser) } throws RuntimeException("Cache full")
 
-        val result = userManager.getUser("1")
-        assertThat(result).isNull()
-        coVerify { userRepository.fetchUserById("1") }
-        coVerify { userCache.putUser(testUser) }
+        assertThrows(RuntimeException::class.java) {
+            runTest(testDispatcher) {
+                userManager.getUser("1")
+            }
+        }
+        coVerifyOrder {
+            userCache.getUser("1")
+            userRepository.fetchUserById("1")
+            userCache.putUser(testUser)
+        }
     }
 
     @Test
@@ -130,30 +145,16 @@ class UserManagerTest {
     }
 
     @Test
-    fun `refreshAllUsers should return empty flow when repository throws exception`() = runTest(testDispatcher) {
+    fun `refreshAllUsers should throw exception when userRepository fetchAllUsers throws exception`() = runTest(testDispatcher) {
         coEvery { userRepository.fetchAllUsers() } throws IOException("Network error")
 
-        val result = userManager.refreshAllUsers()
-        assertThat(result).isEqualTo(emptyFlow<User>())
+        assertThrows(IOException::class.java) {
+            runTest(testDispatcher) {
+                userManager.refreshAllUsers()
+            }
+        }
         coVerify { userRepository.fetchAllUsers() }
         coVerify(exactly = 0) { userCache.putUser(any()) }
-    }
-
-    @Test
-    fun `refreshAllUsers should continue processing even if cache operations fails on one user cache`() = runTest(testDispatcher) {
-        val userFlow = flowOf(testUser, testUser2)
-        coEvery { userRepository.fetchAllUsers() } returns userFlow
-        coEvery { userCache.putUser(testUser) } throws RuntimeException("Cache error for user 1")
-        coJustRun { userCache.putUser(testUser2) }
-
-        userManager.refreshAllUsers().test {
-            assertThat(awaitItem()).isEqualTo(testUser)
-            assertThat(awaitItem()).isEqualTo(testUser2)
-            awaitComplete()
-        }
-
-        coVerify { userCache.putUser(testUser) }
-        coVerify { userCache.putUser(testUser2) }
     }
 
     @Test
@@ -180,13 +181,13 @@ class UserManagerTest {
     }
 
     @Test
-    fun `observeAllUsers should return empty flow when cache throws exception`() = runTest(testDispatcher) {
+    fun `observeAllUsers should throw exception when userCache observeUsers throws exception`() = runTest(testDispatcher) {
         every { userCache.observeUsers() } throws RuntimeException("Cache observation failed")
 
-        val result = userManager.observeAllUsers()
-
-        result.test {
-            expectNoEvents()
+        assertThrows(RuntimeException::class.java) {
+            runTest(testDispatcher) {
+                userManager.observeAllUsers()
+            }
         }
         verify { userCache.observeUsers() }
     }
@@ -206,7 +207,7 @@ class UserManagerTest {
     }
 
     @Test
-    fun `saveUser should throw exception when repository fails`() = runTest(testDispatcher) {
+    fun `saveUser should throw exception when userRepository saveUser throws exception`() = runTest(testDispatcher) {
         coEvery { userRepository.saveUser(testUser) } throws IOException("Network error")
 
         assertThrows(IOException::class.java) {
@@ -220,7 +221,7 @@ class UserManagerTest {
     }
 
     @Test
-    fun `saveUser should throw exception if cache update fails`() = runTest(testDispatcher) {
+    fun `saveUser should throw exception when userCache putUser throws exception`() = runTest(testDispatcher) {
         coEvery { userRepository.saveUser(testUser) } returns testUser
         coEvery { userCache.putUser(testUser) } throws RuntimeException("Cache error")
 
@@ -230,8 +231,10 @@ class UserManagerTest {
             }
         }
 
-        coVerify { userRepository.saveUser(testUser) }
-        coVerify { userCache.putUser(testUser) }
+        coVerifyOrder {
+            userRepository.saveUser(testUser)
+            userCache.putUser(testUser)
+        }
     }
 
     @Test
@@ -260,26 +263,34 @@ class UserManagerTest {
     }
 
     @Test
-    fun `deleteUser should return false when repository throws exception`() = runTest(testDispatcher) {
+    fun `deleteUser should throw exception when userRepository deleteUser throws exception`() = runTest(testDispatcher) {
         coEvery { userRepository.deleteUser("1") } throws IOException("Network error")
 
-        val result = userManager.deleteUser("1")
+        assertThrows(IOException::class.java) {
+            runTest(testDispatcher) {
+                userManager.deleteUser("1")
+            }
+        }
 
-        assertThat(result).isFalse()
         coVerify { userRepository.deleteUser("1") }
         coVerify(exactly = 0) { userCache.removeUser(any()) }
     }
 
     @Test
-    fun `deleteUser should return false if cache remove fails`() = runTest(testDispatcher) {
+    fun `deleteUser should throw exception when userCache removeUser throws exception`() = runTest(testDispatcher) {
         coEvery { userRepository.deleteUser("1") } returns true
         coEvery { userCache.removeUser("1") } throws RuntimeException("Cache remove error")
 
-        val result = userManager.deleteUser("1")
+        assertThrows(RuntimeException::class.java) {
+            runTest(testDispatcher) {
+                userManager.deleteUser("1")
+            }
+        }
 
-        assertThat(result).isFalse()
-        coVerify { userRepository.deleteUser("1") }
-        coVerify { userCache.removeUser("1") }
+        coVerifyOrder {
+            userRepository.deleteUser("1")
+            userCache.removeUser("1")
+        }
     }
 
     @Test
